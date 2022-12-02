@@ -1,12 +1,12 @@
-let token = `b95e854c8f911d49a50f2859d5185cf8506aec042e978d75`
+// let token = `12345test`
+let token = localStorage.getItem('token')
 
 export const serverCalls = {
     get: async () => {
-        const response = await fetch(`https://carbon-emissions-database.herokuapp.com/api/carbons`,{
+        const response = await fetch(`https://evanescent-western-apple.glitch.me//api/carbons/${token}`,{
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
-                'x-access-token': `Bearer ${token}`
+                'Content-Type': 'application/json'
             },
         }); 
         if (!response.ok){
@@ -17,11 +17,11 @@ export const serverCalls = {
     },
 
     create: async(data: any = {}) => {
-        const response = await fetch(`https://carbon-emissions-database.herokuapp.com/api/carbons`,{
+        console.log(data)
+        const response = await fetch(`https://evanescent-western-apple.glitch.me//api/carbons`,{
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'x-access-token': `Bearer ${token}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(data)
         });
@@ -32,22 +32,21 @@ export const serverCalls = {
 
         return await response.json()
     },
-    update: async (id:string, data:any = {}) => {
-        const response = await fetch(`https://carbon-emissions-database.herokuapp.com/api/carbons/${id}`, {
+    update: async (token: string, id:string, data:any = {}) => {
+        console.log(data)
+        const response = await fetch(`https://evanescent-western-apple.glitch.me//api/carbons/${token}/${id}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'x-access-token': `Bearer ${token}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(data)
         });
     },
     delete: async(id:string) => {
-        const response = await fetch(`https://carbon-emissions-database.herokuapp.com/api/carbons/${id}`,{
+        const response = await fetch(`https://evanescent-western-apple.glitch.me//api/carbons/${id}`,{
             method: 'DELETE',
             headers: {
-                'Content-Type': 'application/json',
-                'x-access-token': `Bearer ${token}`
+                'Content-Type': 'application/json'
             }
         })
     }

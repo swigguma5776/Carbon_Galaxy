@@ -2,7 +2,13 @@ import React, {useState} from 'react';
 import firebase from 'firebase/app';
 import { useSigninCheck } from 'reactfire';
 import { useAuthState, useSignInWithGoogle } from 'react-firebase-hooks/auth';
-import { getAuth, GoogleAuthProvider, signOut } from 'firebase/auth'
+import { 
+    onAuthStateChanged,
+    getAuth, 
+    GoogleAuthProvider, 
+    signOut, 
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword, } from 'firebase/auth'
 import { 
     Container,
     Button,
@@ -11,9 +17,11 @@ import {
     Alert as MUIAlert,
     AlertProps,
     AlertTitle,
-    CircularProgress
+    CircularProgress, 
+    styled
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import { Input } from '../sharedComponents';
 
 
@@ -41,9 +49,11 @@ const signinStyles = {
         display: 'block'
     },
     typographyStyle: {
+        color: 'black', 
         fontFamily: 'Roboto, arial, sans-serif;',
-        textAlign: 'center',
-        fontSize: '2em'
+        textAlign: 'left',
+        fontSize: '2em',
+        marginBottom: '20px' 
     },
     containerStyle: {
         marginTop: '2em'
@@ -53,6 +63,14 @@ const signinStyles = {
         backgroundColor: '#4caf{50'
     }
 }
+
+const NavA = styled(Link)({
+    display: "block",
+    color: "#065579",
+    marginBottom: "20px",
+    marginTop: "10px",
+    textDecoration: "none"
+  });
 
 // Functional components to be used inside of SignIn Component
 const Alert = (props:AlertProps) =>{
@@ -72,16 +90,25 @@ const GoogleButton = (props:buttonProps) =>{
     const [signInWithGoogle, user, loading, error] = useSignInWithGoogle(auth);
 
     const signIn = async ( ) =>{
-        const response = await signInWithGoogle();
-        
-        if (user){
-            
+        await signInWithGoogle();
+        localStorage.setItem('auth', 'true')
+        console.log('User signed in')
+        onAuthStateChanged(auth, (user) => {
+        if (user) {
+            console.log(user.email);
+            console.log(user.uid)
+            localStorage.setItem("token", user.uid);
         }
-        navigate('/dashboard')
-    }
+        });
+      
+          await navigate("/dashboard");
+          
+        };
 
     const signUsOut = async () =>{
         await signOut(auth)
+        localStorage.setItem('auth', 'false')
+        console.log('User signed out')
         navigate('/')
     }
 
@@ -90,11 +117,11 @@ const GoogleButton = (props:buttonProps) =>{
     }
     if (user){
         return (
-            <Button variant='contained' color='secondary' onClick={signUsOut}>Sign Out</Button>
+            <Button variant='contained' size ='large' color='secondary' onClick={signUsOut}>Sign Out</Button>
         )
     } else {
         return (
-            <Button sx={signinStyles.googleButton} onClick={signIn}>Sign In With Google</Button>
+            <Button variant='contained' color='secondary' onClick={signIn}>Sign In With Google</Button>
         )
     }
 }
@@ -103,6 +130,8 @@ const GoogleButton = (props:buttonProps) =>{
 export const SignIn = ()=> {
     const [ open, setOpen ] = useState(false);
     const navigate = useNavigate();
+    const { register, handleSubmit } = useForm({});
+    const auth = getAuth()
 
     const handleSnackOpen =() =>{
         setOpen(true)
@@ -112,24 +141,61 @@ export const SignIn = ()=> {
         navigate('/dashboard')
     }
 
+    const signUsOut = async () =>{
+        await signOut(auth)
+        localStorage.setItem('auth', 'false')
+        console.log('User signed out')
+        navigate('/')
+    }
+
+    const onSubmit = async (data: any, event: any) => {
+        console.log(data.email, data.password);
+        signInWithEmailAndPassword(auth, data.email, data.password)
+          .then((userCredential) => {
+            localStorage.setItem("auth", "true");
+            onAuthStateChanged(auth, (user) => {
+              if (user) {
+                localStorage.setItem("token", user.uid);
+              }
+            });
+            const user = userCredential.user;
+            //Once signed in we navigate to dashboard
+            navigate("/dashboard");
+            window.location.reload();
+          })
+          .catch((error) => {
+            const errorCode = error.code;
+            const errorMessage = error.message;
+            console.log(errorMessage);
+          });
+      };
+
+    if (localStorage.getItem('auth') == 'true'){
+        return (
+        <Container maxWidth='md' sx={signinStyles.containerStyle}>
+        <Typography sx={signinStyles.typographyStyle}>
+            Thank you for checking out Carbon Galaxy.    
+        </Typography> 
+            <Button type="submit" variant="contained" color="primary" size="large" onClick={signUsOut}>Sign Out</Button>
+        </Container>
+        )
+    } else {
     return (
        <Container maxWidth='sm' sx={signinStyles.containerStyle}>
         <Typography sx={signinStyles.typographyStyle}>
             Sign In Below    
         </Typography>    
-        <form>
-            <div>
-                <label htmlFor='email'>Email</label>
-                <Input name='email' placeholder='place email here' />
-            </div>
-            <div>
-                <label htmlFor='password'>Password</label>
-                <Input name='password' placeholder='place password here' />
-            </div>
-            <Button type='submit' variant='contained' color='primary'> Submit </Button>
+        <form onSubmit={handleSubmit(onSubmit)}>
+            <label htmlFor="email"> Email</label>
+            <Input {...register("email")} name="email" placeholder='place email here'/>
+            <label htmlFor="password"> Password (must be 6 or more characters)</label>
+            <Input {...register("password")} name="password"placeholder="place password here"/>
+              <Button type="submit" variant="contained" color="primary" size="large">Submit</Button>
         </form>
-
+        <br/>
         <GoogleButton open={open} onClick={handleSnackClose} />
+        <NavA to="/signup">Don't have an account? Register now!</NavA>
+
         <Snackbar message='Success' open={open} autoHideDuration={3000}>
             <Alert severity='success'>
                 <AlertTitle>Successful Sign In --- Redirect in 3 seconds</AlertTitle>
@@ -138,4 +204,61 @@ export const SignIn = ()=> {
 
        </Container>
     )
+    }
 }
+
+
+export const SignUp = () => {
+    const [open, setOpen] = useState(false);
+    const navigate = useNavigate();
+    const { register, handleSubmit } = useForm({});
+    const auth = getAuth();
+    const handleSnackOpen = () => {
+      setOpen(true);
+    };
+    const handleSnackClose = () => {
+      setOpen(false);
+      navigate("/signin");
+    };
+  
+    const onSubmit = async (data: any, event: any) => {
+      console.log(data.email, data.password);
+      createUserWithEmailAndPassword(auth, data.email, data.password)
+        .then((userCredential) => {
+  
+          const user = userCredential.user;
+          //Once signed in we navigate to dashboard
+          navigate("/signin");
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          console.log(errorMessage);
+        });
+    };
+  
+    return (
+        <Container maxWidth='sm' sx={signinStyles.containerStyle}>
+         <Typography sx={signinStyles.typographyStyle}>
+             Sign Up to create your free account!  
+         </Typography>    
+         <form onSubmit={handleSubmit(onSubmit)}>
+             <label htmlFor="email"> Email</label>
+             <Input {...register("email")} name="email" placeholder='place email here'/>
+             <label htmlFor="password"> Password (must be 6 or more characters)</label>
+             <Input {...register("password")} name="password"placeholder="place password here"/>
+               <Button type="submit" variant="contained" color="primary" size="large">Submit</Button>
+         </form>
+         <br/>
+         <GoogleButton open={open} onClick={handleSnackClose} />
+         <NavA to="/signin">Already Have an Account? Sign In!</NavA>
+ 
+         <Snackbar message='Success' open={open} autoHideDuration={3000}>
+             <Alert severity='success'>
+                 <AlertTitle>Successful Sign Up --- Redirect in 3 seconds</AlertTitle>
+             </Alert>    
+         </Snackbar>
+ 
+        </Container>
+     )
+  };

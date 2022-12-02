@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { Home, Dashboard, About, SignIn } from './components'; 
+import { Home, Dashboard, About, SignIn, SignUp } from './components'; 
 import './styles.css'; 
 import reportWebVitals from './reportWebVitals';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -28,6 +28,7 @@ root.render(
               <Route path='/dashboard' element={<Dashboard />} />
               <Route path='/about' element={<About />} />
               <Route path='/signin' element={<SignIn />} />
+              <Route path='/signup' element={<SignUp />} />
             </Routes>
           </Router>
         </ThemeProvider>
